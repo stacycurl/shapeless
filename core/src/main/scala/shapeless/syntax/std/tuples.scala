@@ -39,6 +39,12 @@ final class TupleOps[T](t: T) {
   def productElements(implicit gen: Generic[T]): gen.Repr = gen.to(t)
 
   /**
+   * Returns an `HList` containing the elements of this tuple.
+   */
+  @deprecated("Use productElements instead", "2.0.0")
+  def hlisted(implicit hlister: HLister[T]): hlister.Out = hlister(t)
+
+  /**
    * Returns the first element of this tuple.
    */
   def head(implicit c: IsComposite[T]): c.H = c.head(t)
