@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,25 +21,21 @@ import org.junit.Assert._
 
 class LensTests {
   import Lens._
-  import Nat._
   
   def typed[T](t : => T) {}
 
   case class Address(street : String, city : String, postcode : String)
   case class Person(name : String, age : Int, address : Address)
   
-  implicit val addressIso = Iso.hlist(Address.apply _, Address.unapply _)
-  implicit val personIso = Iso.hlist(Person.apply _, Person.unapply _)
-
   val address = Address("Southover Street", "Brighton", "BN2 9UA")
   val person = Person("Joe Grey", 37, address)
     
-  val nameLens     = Lens[Person] >> _0
-  val ageLens      = Lens[Person] >> _1
-  val addressLens  = Lens[Person] >> _2
-  val streetLens   = Lens[Person] >> _2 >> _0
-  val cityLens     = Lens[Person] >> _2 >> _1
-  val postcodeLens = Lens[Person] >> _2 >> _2
+  val nameLens     = Lens[Person] >> 0
+  val ageLens      = Lens[Person] >> 1
+  val addressLens  = Lens[Person] >> 2
+  val streetLens   = Lens[Person] >> 2 >> 0
+  val cityLens     = Lens[Person] >> 2 >> 1
+  val postcodeLens = Lens[Person] >> 2 >> 2
 
   @Test
   def testBasics {
@@ -60,8 +56,8 @@ class LensTests {
   
   @Test
   def testCompose {
-    val addressLens = Lens[Person] >> _2
-    val streetLens = Lens[Address] >> _0
+    val addressLens = Lens[Person] >> 2
+    val streetLens = Lens[Address] >> 0
     
     val personStreetLens1 = streetLens compose addressLens
     val personStreetLens2 = compose(streetLens, addressLens)
@@ -86,12 +82,12 @@ class LensTests {
     
     val tp = (23, ("foo", (2.0, false)))
 
-    val lens0 = Lens[ISDB] >> _0
-    val lens1 = Lens[ISDB] >> _1
-    val lens10 = Lens[ISDB] >> _1 >> _0
-    val lens11 = Lens[ISDB] >> _1 >> _1
-    val lens110 = Lens[ISDB] >> _1 >> _1 >> _0
-    val lens111 = Lens[ISDB] >> _1 >> _1 >> _1
+    val lens0 = Lens[ISDB] >> 0
+    val lens1 = Lens[ISDB] >> 1
+    val lens10 = Lens[ISDB] >> 1 >> 0
+    val lens11 = Lens[ISDB] >> 1 >> 1
+    val lens110 = Lens[ISDB] >> 1 >> 1 >> 0
+    val lens111 = Lens[ISDB] >> 1 >> 1 >> 1
     
     val i = lens0.get(tp)
     typed[Int](i)
@@ -144,6 +140,8 @@ class LensTests {
   
   @Test
   def testHLists {
+    import nat._
+
     type ISB = Int :: String :: Boolean :: HNil 
     val l = 23 :: "foo" :: true :: HNil
     

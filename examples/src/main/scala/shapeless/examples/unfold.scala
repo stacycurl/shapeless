@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012 Miles Sabin 
+ * Copyright (c) 2012-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,19 +18,19 @@ package shapeless.examples
 
 object UnfoldExamples extends App {
   import shapeless._
-  import Poly._
-  import Nat._
-  import HList._
+  import nat._
+  import ops.nat._
+  import poly._
   
   def typed[T](t : => T) {}
   
-  trait Unfold[F <: Poly1, E, S] {
+  trait Unfold[F <: Poly, E, S] {
     type Out <: HList
     def apply(s : S) : Out
   }
   
   object Unfold {
-    implicit def unfold1[F <: Poly1, E, S, Out0 <: HList]
+    implicit def unfold1[F <: Poly, E, S, Out0 <: HList]
       (implicit unfold : UnfoldAux[F, E, S, E, Out0]) : Unfold[F, E, S] =
         new Unfold[F, E, S] {
           type Out = Out0
@@ -38,34 +38,34 @@ object UnfoldExamples extends App {
         }
     
     trait ApplyUnfold[E] {
-      def apply[F <: Poly1, S, L <: HList](f : F)(s : S)
-        (implicit unfold : UnfoldAux[F, E, S, E, L]) = unfold(s)
+      def apply[S, L <: HList](f : Poly)(s : S)
+        (implicit unfold : UnfoldAux[f.type, E, S, E, L]) = unfold(s)
     }
     
     def unfold[E] = new ApplyUnfold[E] {} 
     def unfold[E](e : E) = new ApplyUnfold[E] {} 
   }
   
-  trait UnfoldAux[F <: Poly1, E, S, CoS, Out <: HList] {
+  trait UnfoldAux[F <: Poly, E, S, CoS, Out <: HList] {
     def apply(s : S) : Out
   }
   
   object UnfoldAux {
-    implicit def unfold1[F <: Poly1, S, CoS] : UnfoldAux[F, S, S, CoS, HNil] = new UnfoldAux[F, S, S, CoS, HNil] {
+    implicit def unfold1[F <: Poly, S, CoS] : UnfoldAux[F, S, S, CoS, HNil] = new UnfoldAux[F, S, S, CoS, HNil] {
       def apply(s : S) = HNil
     }
     
     // The trick to prevent diverging implicits here is to have the term CoS (read: co-seed)
     // shrink at the same time as the term S (read: seed) grows. The only structure assumed
     // for the (co-)sequence of seeds is that implied by the cases of F.
-    implicit def unfold2[F <: Poly1, E, S, CoS, SS, OutH, OutT <: HList, PCoS, PCoSV]
+    implicit def unfold2[F <: Poly, E, S, CoS, SS, OutH, OutT <: HList, PCoS, PCoSV]
       (implicit
-        shrink : Pullback1Aux[F, PCoS, (PCoSV, CoS)],
-        f : Pullback1Aux[F, S, (OutH, SS)],
+        shrink : Case1.Aux[F, PCoS, (PCoSV, CoS)],
+        f : Case1.Aux[F, S, (OutH, SS)],
         ut : UnfoldAux[F, E, SS, PCoS, OutT]) : UnfoldAux[F, E, S, CoS, OutH :: OutT] =
         new UnfoldAux[F, E, S, CoS, OutH :: OutT] {
           def apply(s : S) : OutH :: OutT = { 
-            val (outH, sn) = f(s)
+            val (outH, sn) = f(s :: HNil)
             outH :: ut(sn)
           }
         }
@@ -80,7 +80,7 @@ object UnfoldExamples extends App {
     implicit def case3 = at[_3](_ => (1.0, _4))
   }
 
-  val l1 = unfold(_3)(unfoldMisc)(_0)
+  val l1 = unfold(Nat(3))(unfoldMisc)(Nat(0))
   typed[Int :: String :: Boolean :: HNil](l1)
   println(l1)
 
@@ -89,18 +89,18 @@ object UnfoldExamples extends App {
     implicit def case1 = at[_1](_ => (_1, _2))
     implicit def caseN[N <: Nat, FN <: Nat, FSN <: Nat, FSSN <: Nat]
       (implicit
-        fn : Pullback1[N, (FN, Succ[N])],
-        fsn : Pullback1[Succ[N], (FSN, Succ[Succ[N]])],
-        sum : SumAux[FN, FSN, FSSN],
-        fssn : FSSN) =
-      at[Succ[Succ[N]]](_ => (fssn, Succ[Succ[Succ[N]]]))
+        fn : Case.Aux[N, (FN, Succ[N])],
+        fsn : Case.Aux[Succ[N], (FSN, Succ[Succ[N]])],
+        sum : Sum.Aux[FN, FSN, FSSN],
+        fssn : Witness.Aux[FSSN]) =
+      at[Succ[Succ[N]]](_ => ((fssn.value: FSSN), Succ[Succ[Succ[N]]]))
   }
 
   object toInt extends Poly1 {
     implicit def default[N <: Nat](implicit toInt : ToInt[N]) = at[N](_ => toInt())
   }
   
-  val l2 = unfold(_6)(unfoldFibs)(_0)
+  val l2 = unfold(_6)(unfoldFibs)(Nat(0))
   typed[_0 :: _1 :: _1 :: _2 :: _3 :: _5 :: HNil](l2)
   println(l2 map toInt)
 }

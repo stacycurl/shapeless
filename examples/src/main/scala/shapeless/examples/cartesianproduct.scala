@@ -16,6 +16,8 @@
 
 package shapeless.examples
 
+import shapeless.ops.hlist.Prepend
+
 /**
  * Computing the Cartesian product of two HLists.
  *
@@ -26,6 +28,7 @@ package shapeless.examples
  */
 object CartesianProductExample extends App {
   import shapeless._
+  import poly._
 
   def typed[T](t : => T) {}
 
@@ -44,7 +47,7 @@ object CartesianProductExample extends App {
     }
 
     implicit def hlist[HF, A, XH, XT <: HList, OutH, OutT <: HList](implicit
-      applied: Poly.Pullback2Aux[HF, A, XH, OutH],
+      applied: Case2.Aux[HF, A, XH, OutH],
       mapper: ApplyMapper[HF, A, XT, OutT]
     ) = new ApplyMapper[HF, A, XH :: XT, OutH :: OutT] {
       def apply(a: A, x: XH :: XT) = applied(a, x.head) :: mapper(a, x.tail)
@@ -66,12 +69,12 @@ object CartesianProductExample extends App {
 
     implicit def hlist[
       HF, XH, XT <: HList, Y <: HList,
-      Out1 <: HList, Out2 <: HList, Out <: HList
+      Out1 <: HList, Out2 <: HList
     ](implicit
       mapper: ApplyMapper[HF, XH, Y, Out1],
       lift: LiftA2[HF, XT, Y, Out2],
-      prepend : PrependAux[Out1, Out2, Out]
-    ) = new LiftA2[HF, XH :: XT, Y, Out] {
+      prepend : Prepend[Out1, Out2]
+    ) = new LiftA2[HF, XH :: XT, Y, prepend.Out] {
       def apply(x: XH :: XT, y: Y) = prepend(mapper(x.head, y), lift(x.tail, y))
     }
   }
@@ -87,8 +90,8 @@ object CartesianProductExample extends App {
   /**
    * A polymorphic binary function that pairs its arguments.
    */
-  object tuple extends Poly2 {
-    implicit def whatever[A, B] = at[A, B] { case (a, b) => (a, b) }
+  object tuple extends Poly {
+    implicit def whatever[A, B] = use((a : A, b : B) => (a, b))
   }
 
   // Two example lists.

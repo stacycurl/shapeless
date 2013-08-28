@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Miles Sabin 
+ * Copyright (c) 2011-13 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,9 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
+import shapeless.test.illTyped
+
 class HMapTests {
-  import HList._
-  import Mapper._
-  import MapperAux._
-  
   def typed[T](t : => T) {}
 
   class BiMapIS[K, V]
@@ -33,7 +31,10 @@ class HMapTests {
   @Test
   def testBasics {
     val hm = HMap[BiMapIS](23 -> "foo", "bar" -> 13)
-    //val hm2 = HMap[BiMapIS](23 -> "foo", 23 -> 13)   // Does not compile
+    
+    illTyped("""
+      val hm2 = HMap[BiMapIS](23 -> "foo", 23 -> 13)
+    """)
     
     val s1 = hm.get(23)
     assertTrue(isDefined(s1))
@@ -58,7 +59,7 @@ class HMapTests {
     assertEquals("foo" :: 13 :: "foo" :: 13 :: HNil, l2)
     
     // Use as an argument to a HoF
-    def pairApply[F <: Poly](f : F)(implicit ci : f.Case1[Int], cs : f.Case1[String]) = (f(23), f("bar"))
+    def pairApply(f: Poly1)(implicit ci : f.Case[Int], cs : f.Case[String]) = (f(23), f("bar"))
 
     val a1 = pairApply(hm)
     typed[(String, Int)](a1)
@@ -68,8 +69,13 @@ class HMapTests {
   @Test
   def testNatTrans {
     val nt = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), Set(23) -> Option(13))
-    //val nt2 = HMap[(Set ~?> Option)#λ](Set("foo") -> Option(13), Set(23) -> Option(13))  // Does not compile
-    //val nt3 = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), "foo" -> 23)         // Does not compile
+    
+    illTyped("""
+      val nt2 = HMap[(Set ~?> Option)#λ](Set("foo") -> Option(13), Set(23) -> Option(13))
+    """)
+    illTyped("""
+      val nt3 = HMap[(Set ~?> Option)#λ](Set("foo") -> Option("bar"), "foo" -> 23)
+    """)
 
     // Needed to allow V to be inferred in get
     implicit object SO extends (Set ~?> Option)
@@ -100,7 +106,7 @@ class HMapTests {
     assertEquals(Some("bar") :: Some(13) :: HNil, l2)
 
     // Use as an argument to a HoF
-    def pairApply[F <: Poly](f : F)(implicit cs : f.Case1[Set[String]], ci : f.Case1[Set[Int]]) = (f(Set("foo")), f(Set(23)))
+    def pairApply(f: Poly1)(implicit cs : f.Case[Set[String]], ci : f.Case[Set[Int]]) = (f(Set("foo")), f(Set(23)))
     
     val a1 = pairApply(nt)
     typed[(Option[String], Option[Int])](a1)
