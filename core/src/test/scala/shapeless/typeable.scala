@@ -22,7 +22,7 @@ class TypeableTests {
   import org.junit.Test
   import org.junit.Assert._
 
-  import syntax.typeable._
+  import Typeable._
   
   @Test
   def testPrimitives {
@@ -141,6 +141,8 @@ class TypeableTests {
   
   @Test
   def testHList {
+    import HList._
+    
     val lisdb : Any = 23 :: "foo" :: 2.0 :: false :: HNil
     val clisdb = lisdb.cast[Int :: String :: Double :: Boolean :: HNil]
     assertTrue(clisdb.isDefined)
@@ -168,6 +170,8 @@ class TypeableTests {
   
   @Test
   def testNull {
+    import HList._
+    
     val n : Any = null
     val cn = n.cast[AnyVal]
     assertTrue(cn.isDefined)

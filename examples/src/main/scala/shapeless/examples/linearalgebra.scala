@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-13 Miles Sabin 
+ * Copyright (c) 2012 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,11 +23,9 @@ package shapeless.examples
  */
 object LinearAlgebraExamples extends App {
   import shapeless._
-  import nat._
-  import newtype._
-  import ops.hlist.{ Mapper, Transposer }
-  import ops.product.ProductLength
-
+  import TypeOperators._
+  import Nat._
+  import Tuples._
   
   def typed[T](t : => T) {}
 
@@ -49,18 +47,19 @@ object LinearAlgebraExamples extends App {
     
     implicit def pointOpsN[N <: Nat, LN <: HList, PN <: Product, ZLN <: HList]
       (implicit
-        gen : Generic.Aux[PN, LN],
-        zipper : Transposer.Aux[LN :: LN :: HNil, ZLN],
-        mapper : Mapper.Aux[sum.type, ZLN, LN]) : PN => VectorOps[N, PN] =
+        hl : HListerAux[PN, LN],
+        tp : TuplerAux[LN, PN],
+        zipper : TransposerAux[LN :: LN :: HNil, ZLN],
+        mapper : MapperAux[sum.type, ZLN, LN]) : PN => VectorOps[N, PN] =
           (p : PN) =>
             new VectorOps[N, PN](p) {
               def +(other : Self) : Self =
-                newtype(gen.from((gen.to(p) :: gen.to(other.tupled) :: HNil).transpose.map(sum)))
+                newtype((p.hlisted :: other.tupled.hlisted :: HNil).transpose.map(sum).tupled)
             }
   }
 
   def Vector(p : Double) = newtype[Tuple1[Double], VectorOps[_1, Tuple1[Double]]](Tuple1(p))
-  def Vector[P <: Product, N <: Nat](p : P)(implicit ar : ProductLength.Aux[P, N]) = newtype[P, VectorOps[N, P]](p)
+  def Vector[P <: Product, N <: Nat](p : P)(implicit ar : ProductArityAux[P, N]) = newtype[P, VectorOps[N, P]](p)
   
   type V1 = Newtype[Tuple1[Double], VectorOps[_1, Tuple1[Double]]]
   type V2 = Newtype[(Double, Double), VectorOps[_2, (Double, Double)]]

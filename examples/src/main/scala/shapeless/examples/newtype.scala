@@ -18,7 +18,7 @@ package shapeless.examples
 
 object NewtypeExampes extends App {
   import shapeless._
-  import newtype._
+  import TypeOperators._
   
   // MyString is a new type with String as its underlying representation and with its operations 
   // provided by MyStringOps

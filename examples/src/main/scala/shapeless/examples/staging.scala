@@ -46,7 +46,7 @@ object ReflectionUtils {
         case Array(root, suffix @ _*) =>
           val (pathSuffix, typeName) = (suffix.init, suffix.last)
           Select(
-            pathSuffix.map(newTermName).foldLeft(Ident(newTermName(root)) : Tree)(Select.apply),
+            pathSuffix.foldLeft(Ident(newTermName(root)) : Tree)(Select),
             newTypeName(typeName)
           )
       }

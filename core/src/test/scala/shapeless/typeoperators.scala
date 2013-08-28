@@ -16,22 +16,12 @@
 
 package shapeless
 
-import org.junit.Test
-import org.junit.Assert._
-
-import shapeless.test.illTyped
-import newtype._
-import tag._
+import TypeOperators._
 
 class TypeOperatorTests {
+  import org.junit.Test
+  import org.junit.Assert._
 
-  trait ATag
-  
-  object ATag {
-    implicit def taggedToString[T](value: T with Tagged[ATag]): String = message
-  
-    val message = "This object has ATag tag type"
-  }
 
   @Test
   def testImplicitScopeForTaggedType {
@@ -39,35 +29,12 @@ class TypeOperatorTests {
     val s: String = x
     assertEquals(ATag.message, s)
   }
-  
-  @Test
-  def testNewtype {
-    type MyString = Newtype[String, MyStringOps]
-    
-    def MyString(s : String) : MyString = newtype(s)
-    
-    case class MyStringOps(s : String) {
-      def mySize = s.size
-    }
-    implicit val mkOps = MyStringOps
-    
-    val ms = MyString("foo")
-    
-    illTyped("""
-      val s : String = ms
-    """)
-    illTyped("""
-      val ms2 : MyString = "foo"
-    """)
-    illTyped("""
-      ms.size
-    """)
-    
-    assertEquals(3, ms.mySize)
-    
-    val s2 = "bar"
-    val ms2 = MyString(s2)
-    
-    assertTrue(ms2 eq (s2 : AnyRef))
-  }
+}
+
+trait ATag
+object ATag {
+
+  val message = "This object has ATag tag type"
+
+  implicit def taggedToString[T](value: T with Tagged[ATag]): String = message
 }

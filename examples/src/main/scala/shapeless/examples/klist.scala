@@ -18,6 +18,8 @@ package shapeless.examples
 
 object KList {
   import shapeless._
+  import TypeOperators._
+  import HList._
   import UnaryTCConstraint._
   
   // Function which will only accept HList's whose elements all have have Option as their

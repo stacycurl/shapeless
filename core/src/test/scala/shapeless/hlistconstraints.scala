@@ -19,11 +19,10 @@ package shapeless
 import org.junit.Test
 import org.junit.Assert._
 
-import shapeless.test.illTyped
-
 class HListConstraintsTests {
   @Test
   def testUnaryTCConstraint {
+    import TypeOperators._
     import UnaryTCConstraint._
     
     def acceptOption[L <: HList : *->*[Option]#λ](l : L) = true
@@ -32,10 +31,7 @@ class HListConstraintsTests {
     val l2 = Option(23) :: true :: Option("foo") :: HNil
     
     acceptOption(l1)  // Compiles
-
-    illTyped("""
-    acceptOption(l2)
-    """)
+    //acceptOption(l2)  // Does not compile
 
     val l3 = 23 :: true :: "foo" :: HNil 
     
@@ -49,9 +45,7 @@ class HListConstraintsTests {
     def acceptConst[L <: HList : *->*[Const[String]#λ]#λ](l : L) = true
     
     acceptConst(l4)  // Compiles
-    illTyped("""
-    acceptConst(l5)
-    """)
+    //acceptConst(l5)  // Does not compile
   }
   
   @Test
@@ -66,9 +60,7 @@ class HListConstraintsTests {
     val l2 = 23 :: true :: 13 :: 7 :: 5 :: 2.0 :: "foo" :: "bar" :: HNil
 
     acceptBasis(l1) // Compiles
-    illTyped("""
-    acceptBasis(l2)
-    """)
+    //acceptBasis(l2) // Does not compile
   }
   
   @Test
@@ -85,9 +77,7 @@ class HListConstraintsTests {
     val l2 = Apple :: 23 :: "foo" :: Pear :: HNil
 
     acceptLUB(l1) // Compiles
-    illTyped("""
-    acceptLUB(l2)
-    """)
+    //acceptLUB(l2) // Does not compile
   }
 
   @Test
@@ -95,37 +85,33 @@ class HListConstraintsTests {
     import KeyConstraint._
     import ValueConstraint._
     
-    object author  extends FieldOf[String]
-    object title   extends FieldOf[String]
-    object id      extends FieldOf[Int]
-    object price   extends FieldOf[Double]
-    object inPrint extends FieldOf[Boolean]
+    object author  extends Field[String]
+    object title   extends Field[String]
+    object id      extends Field[Int]
+    object price   extends Field[Double]
+    object inPrint extends Field[Boolean]
 
     val book =
-      (author ->> "Benjamin Pierce") ::
-      (title  ->> "Types and Programming Languages") ::
-      (id     ->>  262162091) ::
-      (price  ->>  44.11) ::
+      (author -> "Benjamin Pierce") ::
+      (title  -> "Types and Programming Languages") ::
+      (id     ->  262162091) ::
+      (price  ->  44.11) ::
       HNil
     
     val summary = 
-      (author ->> "Benjamin Pierce") ::
-      (title  ->> "Types and Programming Languages") ::
-      (id     ->>  262162091) ::
+      (author -> "Benjamin Pierce") ::
+      (title  -> "Types and Programming Languages") ::
+      (id     ->  262162091) ::
       HNil
 
     def acceptKeys[R <: HList : Keys[author.type :: title.type :: id.type :: HNil]#λ](r : R) = true
     
     acceptKeys(summary)   // Compiles
-    illTyped("""
-    acceptKeys(book)
-    """)
+    //acceptKeys(book)    // Does not compile
 
     def acceptValues[R <: HList : Values[Int :: String :: HNil]#λ](r : R) = true
     
     acceptValues(summary) // Compiles
-    illTyped("""
-    acceptValues(book)
-    """)
+    //acceptValues(book)  // Does not compile
   }
 }

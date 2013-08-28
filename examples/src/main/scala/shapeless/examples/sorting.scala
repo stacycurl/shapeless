@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-13 Miles Sabin 
+ * Copyright (c) 2011 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ package shapeless.examples
  */
 object Sorting {
   import shapeless._
-  import nat._
-  import ops.nat._
+  import Nat._
+  import HList._
   import LT._
   import LTEq._
   

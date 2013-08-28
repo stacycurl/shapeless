@@ -20,7 +20,8 @@ object StackOverflow2 {
   // http://stackoverflow.com/questions/8270526
   
   import shapeless._
-  import ops.function._
+  import HList._
+  import Functions._
   
   sealed abstract class A { def eval() : A }
   case class A0 () extends A { def eval() = this }
@@ -28,8 +29,8 @@ object StackOverflow2 {
   case class A2 ( a : A, b : A ) extends A  { def eval() = this }
   
   case class ApplyA[C, L <: HList, HF](c : C, l : L)
-    (implicit fntp: FnToProduct.Aux[C, HF], ev : HF <:< (L => A)) extends A {
-      def eval () : A = fntp(c)(l)
+    (implicit hl : FnHListerAux[C, HF], ev : HF <:< (L => A)) extends A {
+      def eval () : A = hl(c)(l)
     }
 
   val a : A = A0()
@@ -43,9 +44,9 @@ object StackOverflow3 {
   // http://stackoverflow.com/questions/8681491
   
   import shapeless._
-  import poly._
-  import ops.hlist.{ Mapped, Mapper }
-  import syntax.std.function._
+  import HList._
+  import Functions._
+  import TypeOperators._
   
   case class Input[T](value: T)
   
@@ -54,22 +55,19 @@ object StackOverflow3 {
   }
   
   class Preprocessor[In <: HList, Out <: HList, R](ctor : Out => R)
-    (implicit
-      mapped: Mapped.Aux[Out, Input, In],
-      mapper: Mapper.Aux[value.type, In, Out]
-    ) {
+    (implicit mapper : MapperAux[value.type, In, Out]) {
       def apply(in : In) = ctor(in map value)
     }
   
   case class Foo(input1 : Int, input2 : String)
 
-  object FooBuilder extends Preprocessor((Foo.apply _).toProduct)
+  object FooBuilder extends Preprocessor((Foo.apply _).hlisted)
   
   val foo = FooBuilder(Input(23) :: Input("foo") :: HNil)
   
   case class Bar(input1 : Int, input2 : String, input3 : Boolean)
   
-  object BarBuilder extends Preprocessor((Bar.apply _).toProduct)
+  object BarBuilder extends Preprocessor((Bar.apply _).hlisted)
   
   val bar = BarBuilder(Input(23) :: Input("foo") :: Input(true) :: HNil)
 }
@@ -78,16 +76,16 @@ object StackOverflow4 extends App {
   // http://stackoverflow.com/questions/10216278
 
   import shapeless._
-  import ops.function._
-  import syntax.std.function._
+  import HList._
+  import Functions._
 
   def fun(x: Int) = x
   def fun1(x: Int, y: Int) = x
   def fun2(x: Int, foo: Map[Int,String], bar: Seq[Seq[Int]]) = x
   
   def wrap_fun[F, T <: HList, R](f : F)
-    (implicit fntp: FnToProduct.Aux[F, (Int :: T) => R], fnfp: FnFromProduct.Aux[(Int :: T) => R, F]): F =
-      ((x : Int :: T) => f.toProduct(x.head*2 :: x.tail)).fromProduct
+    (implicit hl : FnHListerAux[F, (Int :: T) => R], unhl : FnUnHListerAux[(Int :: T) => R, F]) =
+    ((x : Int :: T) => f.hlisted(x.head*2 :: x.tail)).unhlisted
 
   val f1 = wrap_fun(fun _)
   val f2 = wrap_fun(fun1 _)

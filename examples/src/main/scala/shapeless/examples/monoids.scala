@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-3 Miles Sabin 
+ * Copyright (c) 2012 Miles Sabin 
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,29 +16,27 @@
 
 package shapeless.examples
 
-import shapeless._
-
 object MonoidExamples extends App {
-  import MonoidSyntax._
+  import shapeless._
+  import TypeClass._
+  import Monoid._
 
   // A pair of arbitrary case classes
   case class Foo(i : Int, s : String)
   case class Bar(b : Boolean, s : String, d : Double)
 
-  // Automatically they're monoids ...
-  {
-    import Monoid.auto._
-    val f = Foo(13, "foo") |+| Foo(23, "bar")
-    assert(f == Foo(36, "foobar"))
-  }
+  // Publish their `HListIso`'s
+  implicit def fooIso = Iso.hlist(Foo.apply _, Foo.unapply _)
+  implicit def barIso = Iso.hlist(Bar.apply _, Bar.unapply _)
 
-  // ... or explicitly
-  {
-    implicit val barInstance = TypeClass[Monoid, Bar]
+  // And now they're monoids ...
+  implicitly[Monoid[Foo]]
+  val f = Foo(13, "foo") |+| Foo(23, "bar")
+  assert(f == Foo(36, "foobar"))
 
-    val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
-    assert(b == Bar(true, "foobar", 4.0))
-  }
+  implicitly[Monoid[Bar]]
+  val b = Bar(true, "foo", 1.0) |+| Bar(false, "bar", 3.0)
+  assert(b == Bar(true, "foobar", 4.0))
 }
 
 /**
@@ -49,8 +47,33 @@ trait Monoid[T] {
   def append(a : T, b : T) : T
 }
 
-object Monoid extends TypeClassCompanion[Monoid] {
+object Monoid {
+  import shapeless._
+  
+  implicit def monoidClass : TypeClass[Monoid] = new TypeClass[Monoid] {
+    def emptyProduct = new Monoid[HNil] {
+      def zero = HNil
+      def append(a : HNil, b : HNil) = HNil
+    }
+    def product[F, T <: HList](FHead : Monoid[F], FTail : Monoid[T]) = new Monoid[F :: T] {
+      def zero = FHead.zero :: FTail.zero
+      def append(a : F :: T, b : F :: T) = FHead.append(a.head, b.head) :: FTail.append(a.tail, b.tail)
+    }
+    def derive[F, G](instance : Monoid[G], iso : Iso[F, G]) = new Monoid[F] {
+      def zero = iso.from(instance.zero)
+      def append(a : F, b : F) = iso.from(instance.append(iso.to(a), iso.to(b)))
+    }
+  }
+
   def mzero[T](implicit mt : Monoid[T]) = mt.zero
+  
+  trait MonoidOps[T] {
+    def |+|(b : T) : T
+  }
+  
+  implicit def monoidOps[T](a : T)(implicit mt : Monoid[T]) : MonoidOps[T] = new MonoidOps[T] {
+    def |+|(b : T) = mt.append(a, b)
+  }
   
   implicit def booleanMonoid : Monoid[Boolean] = new Monoid[Boolean] {
     def zero = false
@@ -70,34 +93,6 @@ object Monoid extends TypeClassCompanion[Monoid] {
   implicit def stringMonoid : Monoid[String] = new Monoid[String] {
     def zero = ""
     def append(a : String, b : String) = a+b
-  }
-
-  implicit val monoidInstance: ProductTypeClass[Monoid] = new ProductTypeClass[Monoid] {
-    def emptyProduct = new Monoid[HNil] {
-      def zero = HNil
-      def append(a : HNil, b : HNil) = HNil
-    }
-
-    def product[F, T <: HList](FHead : Monoid[F], FTail : Monoid[T]) = new Monoid[F :: T] {
-      def zero = FHead.zero :: FTail.zero
-      def append(a : F :: T, b : F :: T) = FHead.append(a.head, b.head) :: FTail.append(a.tail, b.tail)
-    }
-
-    def project[F, G](instance : => Monoid[G], to : F => G, from : G => F) = new Monoid[F] {
-      def zero = from(instance.zero)
-      def append(a : F, b : F) = from(instance.append(to(a), to(b)))
-    }
-  }
-
-}
-
-trait MonoidSyntax[T] {
-  def |+|(b : T) : T
-}
-
-object MonoidSyntax {
-  implicit def monoidSyntax[T](a : T)(implicit mt : Monoid[T]) : MonoidSyntax[T] = new MonoidSyntax[T] {
-    def |+|(b : T) = mt.append(a, b)
   }
 }
 
