@@ -144,6 +144,15 @@ class HListTests {
   }
 
   @Test
+  def testLength {
+    assertEquals(_0, (HNil: HNil).length)
+    val l = 1 :: "foo" :: 2.0 :: HNil
+
+    typed[Nat](l.length)
+    assertEquals(_3, l.length)
+  }
+
+  @Test
   def testMap {
     implicitly[Mapper.Aux[choose.type, HNil, HNil]]
     implicitly[choose.Case[Set[Int]]]

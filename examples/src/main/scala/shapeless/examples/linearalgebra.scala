@@ -22,6 +22,7 @@ package shapeless.examples
  * @author Miles Sabin
  */
 object LinearAlgebraExamples extends App {
+/*
   import shapeless._
   import nat._
   import newtype._
@@ -84,4 +85,5 @@ object LinearAlgebraExamples extends App {
   typed[V3](v3c)
   
   assert((1.0, 2.0, 0.0) == v3c.tupled)
+  */
 }

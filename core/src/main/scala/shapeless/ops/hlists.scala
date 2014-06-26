@@ -240,20 +240,32 @@ object hlist {
    */
   trait Length[L <: HList] extends DepFn0 { type Out <: Nat }
 
-  object Length {
-    def apply[L <: HList](implicit length: Length[L]): Aux[L, length.Out] = length
+  import shapeless.nat._
 
-    import shapeless.nat._
-    type Aux[L <: HList, N <: Nat] = Length[L] { type Out = N }
-    implicit def hnilLength: Aux[HNil, _0] = new Length[HNil] {
-      type Out = _0
-      def apply(): Out = _0
+  object Length extends Inductive[Nat, _0, Length, Succ](_0) {
+    protected def step[Pred <: Nat](pred: Pred): Succ[Pred] = Succ[Pred]()
+
+    protected def typeClass[In <: HList, Out0 <: Nat](out: Out0): Length[In] = new Length[In] {
+      type Out = Out0
+      def apply(): Out = out
     }
-    
-    implicit def hlistLength[H, T <: HList, N <: Nat](implicit lt : Aux[T, N], sn : Witness.Aux[Succ[N]]): Aux[H :: T, Succ[N]] = new Length[H :: T] {
-      type Out = Succ[N]
-      def apply(): Out = sn.value
-    }
+  }
+
+  abstract class Inductive[
+    Out0,
+    Base <: Out0,
+    TypeClass[_ <: HList] <: DepFn0 { type Out <: Out0 },
+    Step[_ <: Out0] <: Out0
+  ](base: Base) {
+
+    implicit def hnil: TypeClass[HNil] =
+      typeClass[HNil, Base](base)
+
+    implicit def hcons[H, T <: HList](implicit tailTC: TypeClass[T]): TypeClass[H :: T] =
+      typeClass[H :: T, Step[tailTC.Out]](step(tailTC()))
+
+    protected def step[Pred <: Out0](pred: Pred): Step[Pred]
+    protected def typeClass[In <: HList, Out1 <: Out0](out: Out1): TypeClass[In]
   }
 
   /**
